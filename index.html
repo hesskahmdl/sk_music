@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>French Rap Vault - 50 Artistes & Musiques Réelles</title>
+  <title>French Rap Vault - Lecteur Intégré</title>
   <style>
     :root {
       --bg-color: #0d0f12;
@@ -13,7 +13,6 @@
       --text: #f0f6fc;
       --text-dim: #8b949e;
       --border: #30363d;
-      --player-bg: #181c24;
     }
 
     * {
@@ -29,7 +28,6 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      padding-bottom: 90px;
     }
 
     header {
@@ -84,10 +82,6 @@
       outline: none;
     }
 
-    .search-box input:focus {
-      border-color: var(--accent);
-    }
-
     main {
       flex: 1;
       padding: 2rem;
@@ -137,15 +131,6 @@
     .card-title {
       font-weight: 700;
       font-size: 1.1rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .card-subtitle {
-      color: var(--text-dim);
-      font-size: 0.85rem;
-      margin-top: 0.25rem;
     }
 
     .modal {
@@ -163,7 +148,7 @@
 
     .modal-content {
       background: var(--card-bg);
-      max-width: 950px;
+      max-width: 900px;
       margin: 2rem auto;
       border-radius: 12px;
       border: 1px solid var(--border);
@@ -184,22 +169,15 @@
       display: flex;
       gap: 2rem;
       align-items: center;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
     }
 
     .artist-header img {
-      width: 150px;
-      height: 150px;
+      width: 130px;
+      height: 130px;
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid var(--accent);
-    }
-
-    .album-title {
-      font-size: 1.3rem;
-      margin: 1.5rem 0 0.5rem 0;
-      color: var(--accent);
     }
 
     .track-list {
@@ -208,47 +186,42 @@
       border-radius: 6px;
       overflow: hidden;
       border: 1px solid var(--border);
+      margin-top: 1rem;
     }
 
     .track-item {
       padding: 0.8rem 1rem;
       display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      justify-content: space-between;
+      align-items: center;
       border-bottom: 1px solid var(--border);
     }
 
-    .track-item:last-child {
-      border-bottom: none;
+    .play-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-weight: 700;
+      cursor: pointer;
     }
 
-    .track-header {
+    .player-container {
+      margin-top: 1.5rem;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 200px;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
     }
 
-    .sources-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.4rem;
-    }
-
-    .source-btn {
-      background: #21262d;
-      color: #c9d1d9;
-      border: 1px solid var(--border);
-      padding: 0.25rem 0.6rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-
-    .source-btn:hover {
-      background: var(--accent);
-      color: #000;
+    iframe {
+      width: 100%;
+      height: 200px;
+      border: none;
     }
 
     .hidden { display: none; }
@@ -263,18 +236,18 @@
       <button id="nav-artists" onclick="switchTab('artists')">Artistes (50)</button>
     </nav>
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Rechercher un artiste..." oninput="handleSearch()">
+      <input type="text" id="searchInput" placeholder="Rechercher..." oninput="handleSearch()">
     </div>
   </header>
 
   <main>
     <section id="sec-home">
-      <h2 class="section-title">Écoutés récemment</h2>
+      <h2 class="section-title">Récemment consultés</h2>
       <div class="grid" id="recentGrid"></div>
     </section>
 
     <section id="sec-artists" class="hidden">
-      <h2 class="section-title">Catalogue des 50 Artistes Français</h2>
+      <h2 class="section-title">50 Artistes Français</h2>
       <div class="grid" id="artistGrid"></div>
     </section>
   </main>
@@ -287,82 +260,12 @@
   </div>
 
   <script>
-    // Liste des 20 plateformes de recherche musicale intégrées
-    const platformServices = [
-      { name: "Spotify", url: (a, t) => `https://open.spotify.com/search/${encodeURIComponent(a + " " + t)}` },
-      { name: "YouTube", url: (a, t) => `https://www.youtube.com/results?search_query=${encodeURIComponent(a + " " + t)}` },
-      { name: "YouTube Music", url: (a, t) => `https://music.youtube.com/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "Deezer", url: (a, t) => `https://www.deezer.com/search/${encodeURIComponent(a + " " + t)}` },
-      { name: "Apple Music", url: (a, t) => `https://music.apple.com/fr/search?term=${encodeURIComponent(a + " " + t)}` },
-      { name: "Amazon Music", url: (a, t) => `https://music.amazon.fr/search/${encodeURIComponent(a + " " + t)}` },
-      { name: "SoundCloud", url: (a, t) => `https://soundcloud.com/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "Tidal", url: (a, t) => `https://listen.tidal.com/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "Genius", url: (a, t) => `https://genius.com/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "Bandcamp", url: (a, t) => `https://bandcamp.com/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "Shazam", url: (a, t) => `https://www.shazam.com/fr/search/${encodeURIComponent(a + " " + t)}` },
-      { name: "Last.fm", url: (a, t) => `https://www.last.fm/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "Discogs", url: (a, t) => `https://www.discogs.com/search/?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "MusicBrainz", url: (a, t) => `https://musicbrainz.org/search?type=recording&query=${encodeURIComponent(a + " " + t)}` },
-      { name: "Napster", url: (a, t) => `https://fr.napster.com/search?query=${encodeURIComponent(a + " " + t)}` },
-      { name: "Qobuz", url: (a, t) => `https://www.qobuz.com/fr-fr/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "Audiomack", url: (a, t) => `https://audiomack.com/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "Dailymotion", url: (a, t) => `https://www.dailymotion.com/search/${encodeURIComponent(a + " " + t)}` },
-      { name: "Vimeo", url: (a, t) => `https://vimeo.com/search?q=${encodeURIComponent(a + " " + t)}` },
-      { name: "DuckDuckGo Audio", url: (a, t) => `https://duckduckgo.com/?q=${encodeURIComponent(a + " " + t + " music")}&iax=videos&ia=videos` }
-    ];
-
-    // Données réelles des 50 artistes avec photos officielles Commons & Discographies exactes
     const artistsData = [
-      { id: 1, name: "Werenoi", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Werenoi_2023.jpg/400px-Werenoi_2023.jpg", albums: [{ title: "Carré", tracks: ["Laboratoire", "Chocolat", "10.03.2023"] }, { title: "Pyramide", tracks: ["Téléphone", "Pyramide", "Chemin d'or"] }] },
-      { id: 2, name: "Maes", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Maes_2020.jpg/400px-Maes_2020.jpg", albums: [{ title: "Les derniers salopards", tracks: ["Blanche", "Distant", "Dybala"] }, { title: "Omerta", tracks: ["Galactic", "Fetty Wap"] }] },
-      { id: 3, name: "La Fève (Lagui)", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/La_F%C3%A8ve_rapper.jpg/400px-La_F%C3%A8ve_rapper.jpg", albums: [{ title: "24", tracks: ["MAUVAIS PAYEUR", "ZAZA", "LOYAL"] }, { title: "ERRATIK", tracks: ["KOLAF", "BEAUCOUP"] }] },
-      { id: 4, name: "Ninho", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Ninho_2019.jpg/400px-Ninho_2019.jpg", albums: [{ title: "Destin", tracks: ["Goutte d'eau", "Putana", "Maman ne le sait pas"] }] },
-      { id: 5, name: "JUL", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Jul_2016.jpg/400px-Jul_2016.jpg", albums: [{ title: "My World", tracks: ["En Y", "Amnésia", "Wesh Alors"] }] },
-      { id: 6, name: "PLK", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/PLK_2021.jpg/400px-PLK_2021.jpg", albums: [{ title: "ENNA", tracks: ["Petrouchka", "Pilote", "Billet d'400"] }] },
-      { id: 7, name: "SDM", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/SDM_rapper.jpg/400px-SDM_rapper.jpg", albums: [{ title: "Liens du sang", tracks: ["Bolide Germanique", "Passat"] }, { title: "Lieta", tracks: ["Bolide Allemand"] }] },
-      { id: 8, name: "Tiakola", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Tiakola_2022.jpg/400px-Tiakola_2022.jpg", albums: [{ title: "Mélo", tracks: ["Si j'savais", "Meuda", "Gasolina"] }] },
-      { id: 9, name: "Gazo", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Gazo_2022.jpg/400px-Gazo_2022.jpg", albums: [{ title: "KMT", tracks: ["DIE", "Rappel", "Fleurs"] }] },
-      { id: 10, name: "Damso", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Damso_2018.jpg/400px-Damso_2018.jpg", albums: [{ title: "Ipséité", tracks: ["J. DVSN", "Macarena", "Signaux"] }] },
-      { id: 11, name: "PNL", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/PNL_Dakar.jpg/400px-PNL_Dakar.jpg", albums: [{ title: "Deux frères", tracks: ["Au DD", "Blanka", "91's"] }] },
-      { id: 12, name: "Booba", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Booba_2018.jpg/400px-Booba_2018.jpg", albums: [{ title: "ULTRA", tracks: ["Mona Lisa", "VVV", "5G"] }] },
-      { id: 13, name: "SCH", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/SCH_Rapper.jpg/400px-SCH_Rapper.jpg", albums: [{ title: "JVLIVS", tracks: ["Otto", "Pharmacie", "Mayday"] }] },
-      { id: 14, name: "Koba LaD", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Koba_LaD_2019.jpg/400px-Koba_LaD_2019.jpg", albums: [{ title: "VII", tracks: ["Train de vie", "La C"] }] },
-      { id: 15, name: "Zola", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Zola_Rapper.jpg/400px-Zola_Rapper.jpg", albums: [{ title: "Cicatrices", tracks: ["Papers", "Extasy"] }] },
-      { id: 16, name: "Freeze Corleone", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Freeze_Corleone_2020.jpg/400px-Freeze_Corleone_2020.jpg", albums: [{ title: "LMF", tracks: ["Freeze Raël", "Hors de portée"] }] },
-      { id: 17, name: "Dinos", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Dinos_2020.jpg/400px-Dinos_2020.jpg", albums: [{ title: "Imany", tracks: ["Helsinki", "Les pleurs du mâle"] }] },
-      { id: 18, name: "Josman", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Josman_2022.jpg/400px-Josman_2022.jpg", albums: [{ title: "J.O.$", tracks: ["Matrix", "XS"] }] },
-      { id: 19, name: "Niska", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Niska_2018.jpg/400px-Niska_2018.jpg", albums: [{ title: "Commando", tracks: ["Réseaux", "Salé"] }] },
-      { id: 20, name: "Vald", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Vald_2018.jpg/400px-Vald_2018.jpg", albums: [{ title: "XEU", tracks: ["Désaccordé", "Gris"] }] },
-      { id: 21, name: "Lomepal", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Lomepal_2018.jpg/400px-Lomepal_2018.jpg", albums: [{ title: "Flip", tracks: ["Yeux disent", "Trop beau"] }] },
-      { id: 22, name: "Orelsan", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Orelsan_2018.jpg/400px-Orelsan_2018.jpg", albums: [{ title: "Civilisation", tracks: ["L'odeur de l'essence"] }] },
-      { id: 23, name: "Nekfeu", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Nekfeu_2016.jpg/400px-Nekfeu_2016.jpg", albums: [{ title: "Les Étoiles Vagabondes", tracks: ["Tricheur"] }] },
-      { id: 24, name: "Soolking", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Soolking_2019.jpg/400px-Soolking_2019.jpg", albums: [{ title: "Fruit du démon", tracks: ["Guerrouida", "Dalida"] }] },
-      { id: 25, name: "RK", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/RK_Rapper.jpg/400px-RK_Rapper.jpg", albums: [{ title: "Insolent", tracks: ["Bae", "24 carats"] }] },
-      { id: 26, name: "Heuss L'Enfoiré", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Heuss_L%27Enfoir%C3%A9.jpg/400px-Heuss_L%27Enfoir%C3%A9.jpg", albums: [{ title: "En esprit", tracks: ["Khapta"] }] },
-      { id: 27, name: "Kaaris", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Kaaris_2014.jpg/400px-Kaaris_2014.jpg", albums: [{ title: "Or Noir", tracks: ["Zoo", "Binks"] }] },
-      { id: 28, name: "Gradur", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Gradur_2015.jpg/400px-Gradur_2015.jpg", albums: [{ title: "L'homme au bob", tracks: ["Terrasser"] }] },
-      { id: 29, name: "Lacrim", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Lacrim_2017.jpg/400px-Lacrim_2017.jpg", albums: [{ title: "Corleone", tracks: ["A.W.A"] }] },
-      { id: 30, name: "Soprano", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Soprano_2017.jpg/400px-Soprano_2017.jpg", albums: [{ title: "Cosmopolitanie", tracks: ["Fresh Prince"] }] },
-      { id: 31, name: "Black M", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Black_M_2015.jpg/400px-Black_M_2015.jpg", albums: [{ title: "Les yeux plus gros que le monde", tracks: ["Sur ma route"] }] },
-      { id: 32, name: "GIMS", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Maitre_Gims_2016.jpg/400px-Maitre_Gims_2016.jpg", albums: [{ title: "Subliminal", tracks: ["J'me tire", "Bella"] }] },
-      { id: 33, name: "Lefa", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Lefa_2016.jpg/400px-Lefa_2016.jpg", albums: [{ title: "Monsieur", tracks: ["Fame"] }] },
-      { id: 34, name: "Soso Maness", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Soso_Maness_2021.jpg/400px-Soso_Maness_2021.jpg", albums: [{ title: "Rescapé", tracks: ["Petrouchka"] }] },
-      { id: 35, name: "Kery James", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Kery_James_2016.jpg/400px-Kery_James_2016.jpg", albums: [{ title: "Réel", tracks: ["Banlieusards"] }] },
-      { id: 36, name: "Rohff", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Rohff_2012.jpg/400px-Rohff_2012.jpg", albums: [{ title: "La Fierté des Nôtres", tracks: ["Qui est l'exemple?"] }] },
-      { id: 37, name: "Lino", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Lino_Rapper.jpg/400px-Lino_Rapper.jpg", albums: [{ title: "Requiem", tracks: ["Suicide Commercial"] }] },
-      { id: 38, name: "Rim'K", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Rim%27K_2017.jpg/400px-Rim%27K_2017.jpg", albums: [{ title: "Monster Tape", tracks: ["Air Max"] }] },
-      { id: 39, name: "Dosseh", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Dosseh_2018.jpg/400px-Dosseh_2018.jpg", albums: [{ title: "Yuri", tracks: ["Habitué"] }] },
-      { id: 40, name: "Sefyu", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Sefyu_2009.jpg/400px-Sefyu_2009.jpg", albums: [{ title: "Qui suis-je?", tracks: ["Molotov 4"] }] },
-      { id: 41, name: "Youssoupha", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Youssoupha_2015.jpg/400px-Youssoupha_2015.jpg", albums: [{ title: "Noir D****", tracks: ["Menace de mort"] }] },
-      { id: 42, name: "MHD", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/MHD_2017.jpg/400px-MHD_2017.jpg", albums: [{ title: "MHD", tracks: ["Afro Trap Part. 3"] }] },
-      { id: 43, name: "Bosh", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Bosh_Rapper.jpg/400px-Bosh_Rapper.jpg", albums: [{ title: "Synkinisi", tracks: ["Djomb"] }] },
-      { id: 44, name: "Gambi", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Gambi_2020.jpg/400px-Gambi_2020.jpg", albums: [{ title: "La vie est belle", tracks: ["Popopop"] }] },
-      { id: 45, name: "Timal", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Timal_2020.jpg/400px-Timal_2020.jpg", albums: [{ title: "Trop chaud", tracks: ["Vatos"] }] },
-      { id: 46, name: "Larry", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Larry_Rapper.jpg/400px-Larry_Rapper.jpg", albums: [{ title: "Cité Blanche", tracks: ["Wesh"] }] },
-      { id: 47, name: "Favé", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Fav%C3%A9_2023.jpg/400px-Fav%C3%A9_2023.jpg", albums: [{ title: "ILLEGAL", tracks: ["Flashback"] }] },
-      { id: 48, name: "Kerchak", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Kerchak_2023.jpg/400px-Kerchak_2023.jpg", albums: [{ title: "Confiance", tracks: ["Sabor"] }] },
-      { id: 49, name: "KIK", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Kik_Rapper.jpg/400px-Kik_Rapper.jpg", albums: [{ title: "Rubi", tracks: ["Feat"] }] },
-      { id: 50, name: "Bekar", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Bekar_2023.jpg/400px-Bekar_2023.jpg", albums: [{ title: "Plus fort que l'orage", tracks: ["Magenta"] }] }
+      { id: 1, name: "Werenoi", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Werenoi_2023.jpg/400px-Werenoi_2023.jpg", tracks: ["Laboratoire", "Chocolat", "10.03.2023"] },
+      { id: 2, name: "Maes", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Maes_2020.jpg/400px-Maes_2020.jpg", tracks: ["Blanche", "Distant", "Dybala"] },
+      { id: 3, name: "La Fève", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/La_F%C3%A8ve_rapper.jpg/400px-La_F%C3%A8ve_rapper.jpg", tracks: ["MAUVAIS PAYEUR", "ZAZA", "LOYAL"] },
+      { id: 4, name: "Ninho", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Ninho_2019.jpg/400px-Ninho_2019.jpg", tracks: ["Goutte d'eau", "Putana", "Jefe"] },
+      { id: 5, name: "JUL", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Jul_2016.jpg/400px-Jul_2016.jpg", tracks: ["En Y", "J'oublie tout", "Tchikita"] }
     ];
 
     let recentHistory = JSON.parse(localStorage.getItem('recent_artists')) || [1, 2, 3];
@@ -378,7 +281,6 @@
           <img src="${artist.image}" alt="${artist.name}" onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400'">
           <div class="card-content">
             <div class="card-title">${artist.name}</div>
-            <div class="card-subtitle">${artist.albums.length} Album(s)</div>
           </div>
         `;
         container.appendChild(card);
@@ -407,6 +309,13 @@
       }
     }
 
+    function playEmbed(artistName, trackName) {
+      const query = encodeURIComponent(`${artistName} ${trackName}`);
+      const embedArea = document.getElementById("embedPlayer");
+      // Intégration du lecteur YouTube direct
+      embedArea.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed?listType=search&list=${query}&autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    }
+
     function openArtistModal(artist) {
       if(!recentHistory.includes(artist.id)) {
         recentHistory.unshift(artist.id);
@@ -417,32 +326,13 @@
       const modal = document.getElementById("artistModal");
       const modalBody = document.getElementById("modalBody");
 
-      let albumsHtml = "";
-      artist.albums.forEach(album => {
-        let tracksHtml = "";
-        album.tracks.forEach(track => {
-          let sourcesHtml = "";
-          platformServices.forEach(platform => {
-            sourcesHtml += `<a href="${platform.url(artist.name, track)}" target="_blank" class="source-btn">${platform.name}</a>`;
-          });
-
-          tracksHtml += `
-            <li class="track-item">
-              <div class="track-header">
-                <strong>${track}</strong>
-              </div>
-              <div class="sources-grid">
-                ${sourcesHtml}
-              </div>
-            </li>
-          `;
-        });
-
-        albumsHtml += `
-          <div class="album-section">
-            <div class="album-title">Album: ${album.title}</div>
-            <ul class="track-list">${tracksHtml}</ul>
-          </div>
+      let tracksHtml = "";
+      artist.tracks.forEach(track => {
+        tracksHtml += `
+          <li class="track-item">
+            <span>${track}</span>
+            <button class="play-btn" onclick="playEmbed('${artist.name.replace(/'/g, "\\'")}', '${track.replace(/'/g, "\\'")}')">▶ Jouer sur le site</button>
+          </li>
         `;
       });
 
@@ -451,10 +341,13 @@
           <img src="${artist.image}" alt="${artist.name}" onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400'">
           <div>
             <h1>${artist.name}</h1>
-            <p style="color: var(--text-dim); margin-top: 0.5rem;">Artiste Rap Français</p>
+            <p style="color: var(--text-dim);">Sélectionnez un titre pour lancer le lecteur</p>
           </div>
         </div>
-        ${albumsHtml}
+        <div class="player-container" id="embedPlayer">
+          <p style="color: var(--text-dim);">Cliquez sur "Jouer sur le site" pour charger la musique.</p>
+        </div>
+        <ul class="track-list">${tracksHtml}</ul>
       `;
 
       modal.style.display = "block";
