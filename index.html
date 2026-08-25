@@ -28,6 +28,7 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      padding-bottom: 90px;
     }
 
     header {
@@ -133,6 +134,12 @@
       font-size: 1.1rem;
     }
 
+    .card-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+
     .modal {
       display: none;
       position: fixed;
@@ -187,6 +194,8 @@
       overflow: hidden;
       border: 1px solid var(--border);
       margin-top: 1rem;
+      max-height: 400px;
+      overflow-y: auto;
     }
 
     .track-item {
@@ -195,6 +204,10 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border);
+    }
+
+    .track-item:hover {
+      background: #161b22;
     }
 
     .play-btn {
@@ -207,21 +220,67 @@
       cursor: pointer;
     }
 
-    .player-container {
-      margin-top: 1.5rem;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      min-height: 200px;
+    .play-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    /* BARRE DE LECTURE PERMANENTE */
+    .player-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 85px;
+      background: #06080a;
+      border-top: 1px solid var(--border);
       display: flex;
+      flex-direction: column;
       justify-content: center;
+      padding: 0.5rem 2rem;
+      z-index: 300;
+    }
+
+    .progress-container {
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.1s linear;
+    }
+
+    .player-controls {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
     }
 
-    iframe {
-      width: 100%;
-      height: 200px;
-      border: none;
+    .now-playing {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      width: 30%;
+    }
+
+    .now-playing-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .embed-frame {
+      display: none;
     }
 
     .hidden { display: none; }
@@ -233,7 +292,7 @@
     <div class="logo">RapFR DB</div>
     <nav>
       <button id="nav-home" class="active" onclick="switchTab('home')">Accueil</button>
-      <button id="nav-artists" onclick="switchTab('artists')">Artistes (50)</button>
+      <button id="nav-artists" onclick="switchTab('artists')">Artistes</button>
     </nav>
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Rechercher..." oninput="handleSearch()">
@@ -247,11 +306,12 @@
     </section>
 
     <section id="sec-artists" class="hidden">
-      <h2 class="section-title">50 Artistes Français</h2>
+      <h2 class="section-title">Artistes Français</h2>
       <div class="grid" id="artistGrid"></div>
     </section>
   </main>
 
+  <!-- Modal Artiste -->
   <div id="artistModal" class="modal">
     <div class="modal-content">
       <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -259,28 +319,122 @@
     </div>
   </div>
 
+  <!-- Player Fixe en Bas avec Barre Verte -->
+  <div class="player-bar">
+    <div class="progress-container" onclick="seek(event)">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="player-controls">
+      <div class="now-playing">
+        <div class="now-playing-title" id="nowPlayingText">Aucun morceau en cours</div>
+      </div>
+      <div id="playerFrameContainer"></div>
+    </div>
+  </div>
+
   <script>
-    const artistsData = [
-      { id: 1, name: "Werenoi", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Werenoi_2023.jpg/400px-Werenoi_2023.jpg", tracks: ["Laboratoire", "Chocolat", "10.03.2023"] },
-      { id: 2, name: "Maes", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Maes_2020.jpg/400px-Maes_2020.jpg", tracks: ["Blanche", "Distant", "Dybala"] },
-      { id: 3, name: "La Fève", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/La_F%C3%A8ve_rapper.jpg/400px-La_F%C3%A8ve_rapper.jpg", tracks: ["MAUVAIS PAYEUR", "ZAZA", "LOYAL"] },
-      { id: 4, name: "Ninho", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Ninho_2019.jpg/400px-Ninho_2019.jpg", tracks: ["Goutte d'eau", "Putana", "Jefe"] },
-      { id: 5, name: "JUL", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Jul_2016.jpg/400px-Jul_2016.jpg", tracks: ["En Y", "J'oublie tout", "Tchikita"] }
+    // Chargement des données transmises
+    const rawData = [
+      {
+        "id": 1,
+        "name": "Lagui",
+        "handle": "@Laguitreize",
+        "avatar": "https://yt3.googleusercontent.com/n4_J9HkwLGdi1-wi5KcX6veaaQf5ZRzDLNP0CiGatLM8eXzHueN41a0nsS5mYi6FtKK9PqBRIw=s0",
+        "tracks": [
+          {"title": "Lagui - OLIVIA VALERE (Clip Officiel)", "youtube_id": "MuVh4zR-5DM"},
+          {"title": "Lagui - Capo (Visualizer)", "youtube_id": "Ygh-IfaQ-0g"},
+          {"title": "Lagui - Mandat de dépôt (Feat. Jul)", "youtube_id": "uJSp9cwPrq0"},
+          {"title": "Lagui - Grosse salope (Visualizer)", "youtube_id": "oV0CIENnt0k"},
+          {"title": "Lagui - La Donneuse (Feat. Gazo)", "youtube_id": "hUDrfrO7eaI"},
+          {"title": "Lagui - Bob Marley (Feat. Kaaris)", "youtube_id": "xFjQZF7q_O8"}
+        ]
+      },
+      {
+        "id": 2,
+        "name": "JUL",
+        "handle": "@DORETDEPLATINE",
+        "avatar": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
+        "tracks": []
+      },
+      {
+        "id": 3,
+        "name": "Werenoi",
+        "handle": "@werenoi93",
+        "avatar": "https://yt3.googleusercontent.com/s_5PfxJQU8Xvzedu_NlV-lBnpasJ0vl9BOXKH9G3EtMspPRQg5YMWz_rJIW5d9aVPBYQk3OTKQ=s0",
+        "tracks": [
+          {"title": "Werenoi Ft. GIMS - Piano", "youtube_id": "ShR_fQrqsdA"},
+          {"title": "Werenoi Ft. Damso, Ninho - Triple V", "youtube_id": "hTgk2Rs99b0"},
+          {"title": "Werenoi (ft. PLK) - En pétard", "youtube_id": "cI4JTADjQZ4"},
+          {"title": "Werenoi (ft. Gazo) - La famine", "youtube_id": "X59gzMNuOqQ"},
+          {"title": "Werenoi (ft. SDM) - Dans un verre", "youtube_id": "FjR2kJTbslQ"}
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Maes",
+        "handle": "@Maesofficiel",
+        "avatar": "https://yt3.googleusercontent.com/3kGYRhyoa_2Glq46ztlqROi2G9fIBqQkMWo89PEWZj469Eqfz8CVVcCb-kyxIIfLWEV_GYE-8h0=s0",
+        "tracks": [
+          {"title": "Maes - RIVOLI", "youtube_id": "bFEM0DDsLWk"},
+          {"title": "Maes - SANS BOUSSOLE", "youtube_id": "qePsbLYnDyg"},
+          {"title": "Maes - SURVIE ft Ninho", "youtube_id": "radUTeFRNb8"},
+          {"title": "Maes - 4MOTION ft. PLK", "youtube_id": "q2gs0HSdRxY"},
+          {"title": "Maes - Dybala ft. Jul", "youtube_id": "VOxtCodiqPU"}
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Ninho",
+        "handle": "@NinhoOfficiel",
+        "avatar": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
+        "tracks": []
+      },
+      {
+        "id": 6,
+        "name": "SDM",
+        "handle": "@SDMofficiel",
+        "avatar": "https://yt3.googleusercontent.com/HPXJxcfCQfui4DCxZrBi64AnDPL5ryZQbbXCyjrCRyp1h9RfV7qrSAsk3tzDI6juOunAq2Lw=s0",
+        "tracks": [
+          {"title": "karma feat kizz bouba official", "youtube_id": "nzUvFI5nk4I"},
+          {"title": "LIM PAPA LAISSE MOI", "youtube_id": "T2Q2xg2bNWg"}
+        ]
+      },
+      {
+        "id": 7,
+        "name": "Gazo",
+        "handle": "@GazoOfficiel",
+        "avatar": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400",
+        "tracks": []
+      },
+      {
+        "id": 8,
+        "name": "Tiakola",
+        "handle": "@TiakolaOfficiel",
+        "avatar": "https://yt3.googleusercontent.com/jAW34xcjZoWo2bnEJoz3QZLEJob_Ee15VqJ_VKYG6EOybfmq3qhKBbELbDnl2nRsFIDM15oaWAc=s0",
+        "tracks": [
+          {"title": "Tiakola - Offbeat Melo", "youtube_id": "XMBDdTHTIEo"},
+          {"title": "Tiakola, Genezio - MBIFE", "youtube_id": "_j7rXacobJM"},
+          {"title": "TIAKOLA X GAZO - NOTRE DAME", "youtube_id": "5admyVZkhwI"}
+        ]
+      }
     ];
 
-    let recentHistory = JSON.parse(localStorage.getItem('recent_artists')) || [1, 2, 3];
+    let recentHistory = JSON.parse(localStorage.getItem('recent_artists')) || [1, 3, 4, 8];
+    let progressInterval = null;
 
     function renderArtists(artists, containerId) {
       const container = document.getElementById(containerId);
       container.innerHTML = "";
       artists.forEach(artist => {
+        const avatarUrl = artist.avatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400';
         const card = document.createElement("div");
         card.className = "card";
         card.onclick = () => openArtistModal(artist);
         card.innerHTML = `
-          <img src="${artist.image}" alt="${artist.name}" onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400'">
+          <img src="${avatarUrl}" alt="${artist.name}" onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400'">
           <div class="card-content">
             <div class="card-title">${artist.name}</div>
+            <div class="card-subtitle">${artist.tracks.length} morceau(x)</div>
           </div>
         `;
         container.appendChild(card);
@@ -288,7 +442,7 @@
     }
 
     function renderRecent() {
-      const recentArtists = artistsData.filter(a => recentHistory.includes(a.id));
+      const recentArtists = rawData.filter(a => recentHistory.includes(a.id));
       renderArtists(recentArtists, "recentGrid");
     }
 
@@ -305,15 +459,38 @@
       } else {
         document.getElementById("sec-artists").classList.remove("hidden");
         document.getElementById("nav-artists").classList.add("active");
-        renderArtists(artistsData, "artistGrid");
+        renderArtists(rawData, "artistGrid");
       }
     }
 
-    function playEmbed(artistName, trackName) {
-      const query = encodeURIComponent(`${artistName} ${trackName}`);
-      const embedArea = document.getElementById("embedPlayer");
+    function playTrack(title, youtubeId) {
+      document.getElementById("nowPlayingText").innerText = title;
+      const container = document.getElementById("playerFrameContainer");
+      
       // Intégration du lecteur YouTube direct
-      embedArea.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed?listType=search&list=${query}&autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+      container.innerHTML = `
+        <iframe width="200" height="60" src="https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1" 
+                allow="autoplay; encrypted-media" style="border:none; border-radius:6px;"></iframe>
+      `;
+
+      // Simuler l'avancement de la barre de progression verte
+      startProgressBar();
+    }
+
+    function startProgressBar() {
+      clearInterval(progressInterval);
+      let progress = 0;
+      const progressBar = document.getElementById("progressBar");
+      progressBar.style.width = "0%";
+
+      progressInterval = setInterval(() => {
+        if (progress < 100) {
+          progress += 0.5;
+          progressBar.style.width = progress + "%";
+        } else {
+          clearInterval(progressInterval);
+        }
+      }, 1000);
     }
 
     function openArtistModal(artist) {
@@ -325,28 +502,31 @@
 
       const modal = document.getElementById("artistModal");
       const modalBody = document.getElementById("modalBody");
+      const avatarUrl = artist.avatar || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400';
 
       let tracksHtml = "";
-      artist.tracks.forEach(track => {
-        tracksHtml += `
-          <li class="track-item">
-            <span>${track}</span>
-            <button class="play-btn" onclick="playEmbed('${artist.name.replace(/'/g, "\\'")}', '${track.replace(/'/g, "\\'")}')">▶ Jouer sur le site</button>
-          </li>
-        `;
-      });
+      if (artist.tracks.length > 0) {
+        artist.tracks.forEach(track => {
+          tracksHtml += `
+            <li class="track-item">
+              <span>${track.title}</span>
+              <button class="play-btn" onclick="playTrack('${track.title.replace(/'/g, "\\'")}', '${track.youtube_id}')">▶ Écouter</button>
+            </li>
+          `;
+        });
+      } else {
+        tracksHtml = `<li class="track-item"><span>Aucun titre disponible pour le moment.</span></li>`;
+      }
 
       modalBody.innerHTML = `
         <div class="artist-header">
-          <img src="${artist.image}" alt="${artist.name}" onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400'">
+          <img src="${avatarUrl}" alt="${artist.name}" onerror="this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400'">
           <div>
             <h1>${artist.name}</h1>
-            <p style="color: var(--text-dim);">Sélectionnez un titre pour lancer le lecteur</p>
+            <p style="color: var(--text-dim);">${artist.handle}</p>
           </div>
         </div>
-        <div class="player-container" id="embedPlayer">
-          <p style="color: var(--text-dim);">Cliquez sur "Jouer sur le site" pour charger la musique.</p>
-        </div>
+        <h3 style="margin-bottom: 0.5rem;">Musiques :</h3>
         <ul class="track-list">${tracksHtml}</ul>
       `;
 
@@ -359,7 +539,7 @@
 
     function handleSearch() {
       const query = document.getElementById("searchInput").value.toLowerCase();
-      const filtered = artistsData.filter(a => a.name.toLowerCase().includes(query));
+      const filtered = rawData.filter(a => a.name.toLowerCase().includes(query));
 
       switchTab('artists');
       renderArtists(filtered, "artistGrid");
@@ -373,7 +553,7 @@
     }
 
     renderRecent();
-    renderArtists(artistsData, "artistGrid");
+    renderArtists(rawData, "artistGrid");
   </script>
 </body>
 </html>
