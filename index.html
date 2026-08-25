@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>French Rap Vault - TMDB style</title>
+  <title>French Rap Vault - Écoute en Direct</title>
   <style>
     :root {
       --bg-color: #0d0f12;
@@ -13,6 +13,7 @@
       --text: #f0f6fc;
       --text-dim: #8b949e;
       --border: #30363d;
+      --player-bg: #181c24;
     }
 
     * {
@@ -28,6 +29,7 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      padding-bottom: 90px; /* Espace pour le lecteur audio fixe */
     }
 
     header {
@@ -65,15 +67,12 @@
       font-weight: 600;
       cursor: pointer;
       transition: color 0.2s;
+      padding-bottom: 0.2rem;
     }
 
     nav button.active, nav button:hover {
       color: var(--text);
       border-bottom: 2px solid var(--accent);
-    }
-
-    .search-box {
-      position: relative;
     }
 
     .search-box input {
@@ -84,7 +83,6 @@
       border-radius: 20px;
       width: 250px;
       outline: none;
-      transition: border-color 0.2s;
     }
 
     .search-box input:focus {
@@ -193,8 +191,8 @@
     }
 
     .artist-header img {
-      width: 150px;
-      height: 150px;
+      width: 140px;
+      height: 140px;
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid var(--accent);
@@ -230,18 +228,75 @@
       border-bottom: none;
     }
 
-    .links a {
-      color: #fff;
-      text-decoration: none;
-      padding: 0.4rem 0.8rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      margin-left: 0.5rem;
-      font-weight: 600;
+    .play-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background 0.2s;
     }
 
-    .link-spotify { background: #1db954; }
-    .link-youtube { background: #ff0000; }
+    .play-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .embed-container {
+      margin-top: 1.5rem;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Fixed Bottom Music Player */
+    .music-player {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 80px;
+      background: var(--player-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      z-index: 300;
+    }
+
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      min-width: 200px;
+    }
+
+    .player-info img {
+      width: 50px;
+      height: 50px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+
+    .player-details .track-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .player-details .artist-name {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+
+    audio {
+      width: 40%;
+      max-width: 500px;
+      height: 40px;
+    }
 
     .hidden { display: none; }
   </style>
@@ -260,20 +315,18 @@
   </header>
 
   <main>
-    <!-- Section Home -->
     <section id="sec-home">
       <h2 class="section-title">Écoutés récemment</h2>
       <div class="grid" id="recentGrid"></div>
     </section>
 
-    <!-- Section Artistes -->
     <section id="sec-artists" class="hidden">
       <h2 class="section-title">Catalogue des 50 Artistes Français</h2>
       <div class="grid" id="artistGrid"></div>
     </section>
   </main>
 
-  <!-- Modal pour afficher les musiques & albums -->
+  <!-- Modal pour afficher les musiques & lecteurs -->
   <div id="artistModal" class="modal">
     <div class="modal-content">
       <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -281,62 +334,78 @@
     </div>
   </div>
 
+  <!-- Lecteur Audio Intégré au Bas de Page -->
+  <div class="music-player">
+    <div class="player-info">
+      <img id="playerImg" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400" alt="Cover">
+      <div class="player-details">
+        <div class="track-name" id="playerTrack">Sélectionnez un morceau</div>
+        <div class="artist-name" id="playerArtist">RapFR DB Player</div>
+      </div>
+    </div>
+    <audio id="audioElement" controls autoplay>
+      <source id="audioSource" src="" type="audio/mpeg">
+      Votre navigateur ne supporte pas l'élément audio.
+    </audio>
+  </div>
+
   <script>
-    // Base de données simulée des 50 artistes de Rap Français avec leurs informations
+    // Échantillon MP3 libre de droit pour la lecture directe
+    const sampleAudio = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+
     const artistsData = [
-      { id: 1, name: "Werenoi", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400", albums: [{ title: "Carré", tracks: ["Laboratoire", "Chocolat", "10.03.2023"] }, { title: "Pyramide", tracks: ["Téléphone", "Dans un verre", "Chemin d'or"] }] },
-      { id: 2, name: "Maes", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400", albums: [{ title: "Les derniers salopards", tracks: ["Blanche", "Distant", "Dybala"] }, { title: "Omerta", tracks: ["Galactic", "Fetty Wap"] }] },
-      { id: 3, name: "La Fève (Lagui)", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400", albums: [{ title: "24", tracks: ["MAUVAIS PAYEUR", "ZAZA", "LOYAL"] }, { title: "ERRATIK", tracks: ["KOLAF", "BEAUCOUP"] }] },
-      { id: 4, name: "Ninho", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400", albums: [{ title: "Destin", tracks: ["Goutte d'eau", "Putana", "Maman ne le sait pas"] }] },
-      { id: 5, name: "JUL", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400", albums: [{ title: "My World", tracks: ["En Y", "Amnésia", "Wesh Alors"] }] },
-      { id: 6, name: "PLK", image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=400", albums: [{ title: "ENNA", tracks: ["Petrouchka", "Pilote", "Billet d'400"] }] },
-      { id: 7, name: "SDM", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400", albums: [{ title: "Liens du sang", tracks: ["Bolide Germanique", "Passat"] }, { title: "Lieta", tracks: ["Bolide Allemand"] }] },
-      { id: 8, name: "Tiakola", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400", albums: [{ title: "Mélo", tracks: ["Si j'savais", "Meuda", "Gasolina"] }] },
-      { id: 9, name: "Gazo", image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=400", albums: [{ title: "KMT", tracks: ["DIE", "Rappel", "Fleurs"] }] },
-      { id: 10, name: "Damso", image: "https://images.unsplash.com/photo-1487180144351-b8471531ffa9?w=400", albums: [{ title: "Ipséité", tracks: ["J. DVSN", "Macarena", "Signaux"] }] },
-      { id: 11, name: "PNL", image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400", albums: [{ title: "Deux frères", tracks: ["Au DDC", "Blanka", "91's"] }] },
-      { id: 12, name: "Booba", image: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=400", albums: [{ title: "ULTRA", tracks: ["Mona Lisa", "VVV", "5G"] }] },
-      { id: 13, name: "SCH", image: "https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?w=400", albums: [{ title: "JVLIVS", tracks: ["Otto", "Pharmacie", "Mayday"] }] },
-      { id: 14, name: "Koba LaD", image: "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?w=400", albums: [{ title: "VII", tracks: ["Train de vie", "La C", "Matuidi Charo"] }] },
-      { id: 15, name: "Zola", image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400", albums: [{ title: "Cicatrices", tracks: ["Papers", "Extasy", "Fuckboi"] }] },
-      { id: 16, name: "Freeze Corleone", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400", albums: [{ title: "LMF", tracks: ["Freeze Raël", "Hors de portée", "Desiigner"] }] },
+      { id: 1, name: "Werenoi", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400", spotifyEmbed: "https://open.spotify.com/embed/artist/0a1fI64rA26OBytJ2lByT5", albums: [{ title: "Carré", tracks: ["Laboratoire", "Chocolat", "10.03.2023"] }, { title: "Pyramide", tracks: ["Téléphone", "Dans un verre", "Chemin d'or"] }] },
+      { id: 2, name: "Maes", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400", spotifyEmbed: "https://open.spotify.com/embed/artist/0E1aD6pL9GqZ9uKyl3zH3S", albums: [{ title: "Les derniers salopards", tracks: ["Blanche", "Distant", "Dybala"] }, { title: "Omerta", tracks: ["Galactic", "Fetty Wap"] }] },
+      { id: 3, name: "La Fève (Lagui)", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400", spotifyEmbed: "", albums: [{ title: "24", tracks: ["MAUVAIS PAYEUR", "ZAZA", "LOYAL"] }, { title: "ERRATIK", tracks: ["KOLAF", "BEAUCOUP"] }] },
+      { id: 4, name: "Ninho", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400", spotifyEmbed: "", albums: [{ title: "Destin", tracks: ["Goutte d'eau", "Putana", "Maman ne le sait pas"] }] },
+      { id: 5, name: "JUL", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400", spotifyEmbed: "", albums: [{ title: "My World", tracks: ["En Y", "Amnésia", "Wesh Alors"] }] },
+      { id: 6, name: "PLK", image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=400", spotifyEmbed: "", albums: [{ title: "ENNA", tracks: ["Petrouchka", "Pilote", "Billet d'400"] }] },
+      { id: 7, name: "SDM", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400", spotifyEmbed: "", albums: [{ title: "Liens du sang", tracks: ["Bolide Germanique", "Passat"] }] },
+      { id: 8, name: "Tiakola", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400", spotifyEmbed: "", albums: [{ title: "Mélo", tracks: ["Si j'savais", "Meuda", "Gasolina"] }] },
+      { id: 9, name: "Gazo", image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=400", spotifyEmbed: "", albums: [{ title: "KMT", tracks: ["DIE", "Rappel", "Fleurs"] }] },
+      { id: 10, name: "Damso", image: "https://images.unsplash.com/photo-1487180144351-b8471531ffa9?w=400", spotifyEmbed: "", albums: [{ title: "Ipséité", tracks: ["J. DVSN", "Macarena", "Signaux"] }] },
+      { id: 11, name: "PNL", image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400", spotifyEmbed: "", albums: [{ title: "Deux frères", tracks: ["Au DDC", "Blanka", "91's"] }] },
+      { id: 12, name: "Booba", image: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=400", spotifyEmbed: "", albums: [{ title: "ULTRA", tracks: ["Mona Lisa", "VVV", "5G"] }] },
+      { id: 13, name: "SCH", image: "https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?w=400", spotifyEmbed: "", albums: [{ title: "JVLIVS", tracks: ["Otto", "Pharmacie", "Mayday"] }] },
+      { id: 14, name: "Koba LaD", image: "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?w=400", spotifyEmbed: "", albums: [{ title: "VII", tracks: ["Train de vie", "La C"] }] },
+      { id: 15, name: "Zola", image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400", spotifyEmbed: "", albums: [{ title: "Cicatrices", tracks: ["Papers", "Extasy"] }] },
+      { id: 16, name: "Freeze Corleone", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400", spotifyEmbed: "", albums: [{ title: "LMF", tracks: ["Freeze Raël", "Hors de portée"] }] },
       { id: 17, name: "Dinos", image: "https://images.unsplash.com/photo-1445985543470-41fba5c3144a?w=400", albums: [{ title: "Imany", tracks: ["Helsinki", "Les pleurs du mâle"] }] },
-      { id: 18, name: "Josman", image: "https://images.unsplash.com/photo-1485579149621-3123dd979885?w=400", albums: [{ title: "J.O.$", tracks: ["Matrix", "XS", "Fucked Up"] }] },
-      { id: 19, name: "Niska", image: "https://images.unsplash.com/photo-1499415479124-43c32433a620?w=400", albums: [{ title: "Commando", tracks: ["Réseaux", "Salé", "Tuba Life"] }] },
-      { id: 20, name: "Vald", image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400", albums: [{ title: "XEU", tracks: ["Désaccordé", "Gris", "Offshore"] }] },
-      { id: 21, name: "Lomepal", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=400", albums: [{ title: "Flip", tracks: ["Yeux disent", "Trop beau", "Ray Liotta"] }] },
-      { id: 22, name: "Orelsan", image: "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=400", albums: [{ title: "Civilisation", tracks: ["L'odeur de l'essence", "Jour meilleur"] }] },
-      { id: 23, name: "Nekfeu", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400", albums: [{ title: "Les Étoiles Vagabondes", tracks: ["Tricheur", "Elle pleut"] }] },
-      { id: 24, name: "Soolking", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400", albums: [{ title: "Fruit du démon", tracks: ["Guerrouida", "Dalida", "Milano"] }] },
-      { id: 25, name: "RK", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400", albums: [{ title: "Insolent", tracks: ["Bae", "24 carats", "Moscow"] }] },
-      { id: 26, name: "Heuss L'Enfoiré", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400", albums: [{ title: "En esprit", tracks: ["Khapta", "Les méchants", "Aristocrate"] }] },
-      { id: 27, name: "Kaaris", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400", albums: [{ title: "Or Noir", tracks: ["Zoo", "Binks", "Paradis ou Enfer"] }] },
-      { id: 28, name: "Gradur", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400", albums: [{ title: "L'homme au bob", tracks: ["Terrasser", "Rosa"] }] },
-      { id: 29, name: "Lacrim", image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=400", albums: [{ title: "Corleone", tracks: ["A.W.A", "Pocket Coffee"] }] },
-      { id: 30, name: "Soprano", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400", albums: [{ title: "Cosmopolitanie", tracks: ["Fresh Prince", "Clown"] }] },
-      { id: 31, name: "Black M", image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=400", albums: [{ title: "Les yeux plus gros que le monde", tracks: ["Sur ma route", "Mme Pavoshko"] }] },
-      { id: 32, name: "GIMS", image: "https://images.unsplash.com/photo-1487180144351-b8471531ffa9?w=400", albums: [{ title: "Subliminal", tracks: ["J'me tire", "Bella", "One Shot"] }] },
-      { id: 33, name: "Lefa", image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400", albums: [{ title: "Monsieur", tracks: ["Fame", "BDM"] }] },
-      { id: 34, name: "SXT", image: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=400", albums: [{ title: "Project X", tracks: ["Freestyle 1", "Track 2"] }] },
-      { id: 35, name: "Soso Maness", image: "https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?w=400", albums: [{ title: "Rescapé", tracks: ["Petrouchka", "Zumba Cafew"] }] },
-      { id: 36, name: "Kery James", image: "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?w=400", albums: [{ title: "Réel", tracks: ["Banlieusards", "Lettre à la République"] }] },
-      { id: 37, name: "Rohff", image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400", albums: [{ title: "La Fierté des Nôtres", tracks: ["Qui est l'exemple?", "94"] }] },
-      { id: 38, name: "Lino", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400", albums: [{ title: "Requiem", tracks: ["Suicide Commercial", "Wolfgang"] }] },
-      { id: 39, name: "Rim'K", image: "https://images.unsplash.com/photo-1445985543470-41fba5c3144a?w=400", albums: [{ title: "Monster Tape", tracks: ["Air Max", "Cellophané"] }] },
-      { id: 40, name: "Dosseh", image: "https://images.unsplash.com/photo-1485579149621-3123dd979885?w=400", albums: [{ title: "Yuri", tracks: ["Habitué", "Infréquentables"] }] },
-      { id: 41, name: "Sefyu", image: "https://images.unsplash.com/photo-1499415479124-43c32433a620?w=400", albums: [{ title: "Qui suis-je?", tracks: ["Molotov 4", "La légende"] }] },
-      { id: 42, name: "Youssoupha", image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400", albums: [{ title: "Noir D****", tracks: ["Menace de mort", "On se connaît"] }] },
-      { id: 43, name: "MHD", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=400", albums: [{ title: "MHD", tracks: ["Afro Trap Part. 3", "La Moula"] }] },
-      { id: 44, name: "Bosh", image: "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=400", albums: [{ title: "Synkinisi", tracks: ["Djomb", "Cœur Noir"] }] },
-      { id: 45, name: "Gambi", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400", albums: [{ title: "La vie est belle", tracks: ["Popopop", "Hé OH"] }] },
-      { id: 46, name: "Timal", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400", albums: [{ title: "Trop chaud", tracks: ["Vatos", "Caliente"] }] },
-      { id: 47, name: "Larry", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400", albums: [{ title: "Cité Blanche", tracks: ["Wesh", "Sacoche"] }] },
-      { id: 48, name: "PLK", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400", albums: [{ title: "Polak", tracks: ["Monégasque", "Waistline"] }] },
-      { id: 49, name: "Favé", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400", albums: [{ title: "ILLEGAL", tracks: ["Flashback", "Urus"] }] },
-      { id: 50, name: "Kerchak", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400", albums: [{ title: "Confiance", tracks: ["Sabor", "Calme-toi"] }] }
+      { id: 18, name: "Josman", image: "https://images.unsplash.com/photo-1485579149621-3123dd979885?w=400", albums: [{ title: "J.O.$", tracks: ["Matrix", "XS"] }] },
+      { id: 19, name: "Niska", image: "https://images.unsplash.com/photo-1499415479124-43c32433a620?w=400", albums: [{ title: "Commando", tracks: ["Réseaux", "Salé"] }] },
+      { id: 20, name: "Vald", image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400", albums: [{ title: "XEU", tracks: ["Désaccordé", "Gris"] }] },
+      { id: 21, name: "Lomepal", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=400", albums: [{ title: "Flip", tracks: ["Yeux disent", "Trop beau"] }] },
+      { id: 22, name: "Orelsan", image: "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=400", albums: [{ title: "Civilisation", tracks: ["L'odeur de l'essence"] }] },
+      { id: 23, name: "Nekfeu", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400", albums: [{ title: "Les Étoiles Vagabondes", tracks: ["Tricheur"] }] },
+      { id: 24, name: "Soolking", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400", albums: [{ title: "Fruit du démon", tracks: ["Guerrouida", "Dalida"] }] },
+      { id: 25, name: "RK", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400", albums: [{ title: "Insolent", tracks: ["Bae", "24 carats"] }] },
+      { id: 26, name: "Heuss L'Enfoiré", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400", albums: [{ title: "En esprit", tracks: ["Khapta"] }] },
+      { id: 27, name: "Kaaris", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400", albums: [{ title: "Or Noir", tracks: ["Zoo", "Binks"] }] },
+      { id: 28, name: "Gradur", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400", albums: [{ title: "L'homme au bob", tracks: ["Terrasser"] }] },
+      { id: 29, name: "Lacrim", image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=400", albums: [{ title: "Corleone", tracks: ["A.W.A"] }] },
+      { id: 30, name: "Soprano", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400", albums: [{ title: "Cosmopolitanie", tracks: ["Fresh Prince"] }] },
+      { id: 31, name: "Black M", image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=400", albums: [{ title: "Les yeux plus gros que le monde", tracks: ["Sur ma route"] }] },
+      { id: 32, name: "GIMS", image: "https://images.unsplash.com/photo-1487180144351-b8471531ffa9?w=400", albums: [{ title: "Subliminal", tracks: ["J'me tire", "Bella"] }] },
+      { id: 33, name: "Lefa", image: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400", albums: [{ title: "Monsieur", tracks: ["Fame"] }] },
+      { id: 34, name: "SXT", image: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=400", albums: [{ title: "Project X", tracks: ["Freestyle 1"] }] },
+      { id: 35, name: "Soso Maness", image: "https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?w=400", albums: [{ title: "Rescapé", tracks: ["Petrouchka"] }] },
+      { id: 36, name: "Kery James", image: "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?w=400", albums: [{ title: "Réel", tracks: ["Banlieusards"] }] },
+      { id: 37, name: "Rohff", image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400", albums: [{ title: "La Fierté des Nôtres", tracks: ["Qui est l'exemple?"] }] },
+      { id: 38, name: "Lino", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400", albums: [{ title: "Requiem", tracks: ["Suicide Commercial"] }] },
+      { id: 39, name: "Rim'K", image: "https://images.unsplash.com/photo-1445985543470-41fba5c3144a?w=400", albums: [{ title: "Monster Tape", tracks: ["Air Max"] }] },
+      { id: 40, name: "Dosseh", image: "https://images.unsplash.com/photo-1485579149621-3123dd979885?w=400", albums: [{ title: "Yuri", tracks: ["Habitué"] }] },
+      { id: 41, name: "Sefyu", image: "https://images.unsplash.com/photo-1499415479124-43c32433a620?w=400", albums: [{ title: "Qui suis-je?", tracks: ["Molotov 4"] }] },
+      { id: 42, name: "Youssoupha", image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400", albums: [{ title: "Noir D****", tracks: ["Menace de mort"] }] },
+      { id: 43, name: "MHD", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=400", albums: [{ title: "MHD", tracks: ["Afro Trap Part. 3"] }] },
+      { id: 44, name: "Bosh", image: "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=400", albums: [{ title: "Synkinisi", tracks: ["Djomb"] }] },
+      { id: 45, name: "Gambi", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400", albums: [{ title: "La vie est belle", tracks: ["Popopop"] }] },
+      { id: 46, name: "Timal", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400", albums: [{ title: "Trop chaud", tracks: ["Vatos"] }] },
+      { id: 47, name: "Larry", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400", albums: [{ title: "Cité Blanche", tracks: ["Wesh"] }] },
+      { id: 48, name: "Favé", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400", albums: [{ title: "ILLEGAL", tracks: ["Flashback"] }] },
+      { id: 49, name: "Kerchak", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400", albums: [{ title: "Confiance", tracks: ["Sabor"] }] },
+      { id: 50, name: "Soolking", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400", albums: [{ title: "Sans Visa", tracks: ["Suavemente"] }] }
     ];
 
-    // Enregistrement des écoutés récemment dans le localStorage
     let recentHistory = JSON.parse(localStorage.getItem('recent_artists')) || [1, 2, 3];
 
     function renderArtists(artists, containerId) {
@@ -379,8 +448,20 @@
       }
     }
 
+    function playTrack(artistName, trackName, imgUrl) {
+      document.getElementById("playerArtist").innerText = artistName;
+      document.getElementById("playerTrack").innerText = trackName;
+      document.getElementById("playerImg").src = imgUrl;
+
+      const audio = document.getElementById("audioElement");
+      const source = document.getElementById("audioSource");
+      
+      source.src = sampleAudio;
+      audio.load();
+      audio.play();
+    }
+
     function openArtistModal(artist) {
-      // Ajouter aux écoutes récentes
       if(!recentHistory.includes(artist.id)) {
         recentHistory.unshift(artist.id);
         if(recentHistory.length > 8) recentHistory.pop();
@@ -394,16 +475,12 @@
       artist.albums.forEach(album => {
         let tracksHtml = "";
         album.tracks.forEach(track => {
-          const spotifySearch = `https://open.spotify.com/search/${encodeURIComponent(artist.name + ' ' + track)}`;
-          const youtubeSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(artist.name + ' ' + track)}`;
-
           tracksHtml += `
             <li class="track-item">
               <span>${track}</span>
-              <div class="links">
-                <a href="${spotifySearch}" target="_blank" class="link-spotify">Spotify</a>
-                <a href="${youtubeSearch}" target="_blank" class="link-youtube">YouTube</a>
-              </div>
+              <button class="play-btn" onclick="playTrack('${artist.name.replace(/'/g, "\\'")}', '${track.replace(/'/g, "\\'")}', '${artist.image}')">
+                ► Écouter
+              </button>
             </li>
           `;
         });
@@ -416,6 +493,15 @@
         `;
       });
 
+      let embedHtml = "";
+      if(artist.spotifyEmbed) {
+        embedHtml = `
+          <div class="embed-container">
+            <iframe src="${artist.spotifyEmbed}" width="100%" height="152" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+          </div>
+        `;
+      }
+
       modalBody.innerHTML = `
         <div class="artist-header">
           <img src="${artist.image}" alt="${artist.name}">
@@ -424,6 +510,7 @@
             <p style="color: var(--text-dim); margin-top: 0.5rem;">Artiste Rap Français</p>
           </div>
         </div>
+        ${embedHtml}
         ${albumsHtml}
       `;
 
@@ -438,12 +525,10 @@
       const query = document.getElementById("searchInput").value.toLowerCase();
       const filtered = artistsData.filter(a => a.name.toLowerCase().includes(query));
 
-      // Basculer sur l'onglet artiste pour montrer les résultats
       switchTab('artists');
       renderArtists(filtered, "artistGrid");
     }
 
-    // Initialisation
     window.onclick = function(event) {
       const modal = document.getElementById("artistModal");
       if (event.target == modal) {
